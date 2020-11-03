@@ -5,7 +5,7 @@
  * version 2.0 (the "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at:
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *   https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -14,6 +14,8 @@
  * under the License.
  */
 package io.netty.handler.ssl;
+
+import io.netty.util.internal.SuppressJava6Requirement;
 
 import javax.security.auth.x500.X500Principal;
 import java.io.ByteArrayInputStream;
@@ -81,6 +83,7 @@ final class OpenSslX509Certificate extends X509Certificate {
     }
 
     // No @Override annotation as it was only introduced in Java8.
+    @SuppressJava6Requirement(reason = "Can only be called from Java8 as class is package-private")
     public void verify(PublicKey key, Provider sigProvider)
             throws CertificateException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
         unwrap().verify(key, sigProvider);

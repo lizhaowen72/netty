@@ -5,7 +5,7 @@
  * version 2.0 (the "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at:
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *   https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -80,8 +80,14 @@ public final class HttpToHttp2ConnectionHandlerBuilder extends
     }
 
     @Override
+    @Deprecated
     public HttpToHttp2ConnectionHandlerBuilder initialHuffmanDecodeCapacity(int initialHuffmanDecodeCapacity) {
         return super.initialHuffmanDecodeCapacity(initialHuffmanDecodeCapacity);
+    }
+
+    @Override
+    public HttpToHttp2ConnectionHandlerBuilder decoupleCloseAndGoAway(boolean decoupleCloseAndGoAway) {
+        return super.decoupleCloseAndGoAway(decoupleCloseAndGoAway);
     }
 
     @Override
@@ -92,6 +98,7 @@ public final class HttpToHttp2ConnectionHandlerBuilder extends
     @Override
     protected HttpToHttp2ConnectionHandler build(Http2ConnectionDecoder decoder, Http2ConnectionEncoder encoder,
                                                  Http2Settings initialSettings) {
-        return new HttpToHttp2ConnectionHandler(decoder, encoder, initialSettings, isValidateHeaders());
+        return new HttpToHttp2ConnectionHandler(decoder, encoder, initialSettings, isValidateHeaders(),
+                decoupleCloseAndGoAway());
     }
 }

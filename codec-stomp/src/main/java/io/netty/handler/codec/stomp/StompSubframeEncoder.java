@@ -5,7 +5,7 @@
  * version 2.0 (the "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at:
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *   https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -15,30 +15,41 @@
  */
 package io.netty.handler.codec.stomp;
 
-import java.util.List;
-import java.util.Map.Entry;
-
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.AsciiHeadersEncoder;
-import io.netty.handler.codec.AsciiHeadersEncoder.NewlineType;
-import io.netty.handler.codec.AsciiHeadersEncoder.SeparatorType;
 import io.netty.handler.codec.MessageToMessageEncoder;
 import io.netty.util.CharsetUtil;
+
+import java.util.List;
+import java.util.Map.Entry;
 
 /**
  * Encodes a {@link StompFrame} or a {@link StompSubframe} into a {@link ByteBuf}.
  */
 public class StompSubframeEncoder extends MessageToMessageEncoder<StompSubframe> {
+    private static final ByteBuf HEARTBEAT_FRAME =
+            Unpooled.unreleasableBuffer(Unpooled.wrappedBuffer(new byte[] { StompConstants.LF }));
 
     @Override
     protected void encode(ChannelHandlerContext ctx, StompSubframe msg, List<Object> out) throws Exception {
         if (msg instanceof StompFrame) {
             StompFrame frame = (StompFrame) msg;
-            ByteBuf frameBuf = encodeFrame(frame, ctx);
-            out.add(frameBuf);
-            ByteBuf contentBuf = encodeContent(frame, ctx);
-            out.add(contentBuf);
+            // HEARTBEAT command isn't a real command and should be translated differently
+            if (frame.command() == StompCommand.HEARTBEAT) {
+                out.add(HEARTBEAT_FRAME.duplicate());
+            } else {
+                ByteBuf frameBuf = encodeFrame(frame, ctx);
+                if (frame.content().isReadable()) {
+                    out.add(frameBuf);
+                    ByteBuf contentBuf = encodeContent(frame, ctx);
+                    out.add(contentBuf);
+                } else {
+                    frameBuf.writeByte(StompConstants.NUL);
+                    out.add(frameBuf);
+                }
+            }
         } else if (msg instanceof StompHeadersSubframe) {
             StompHeadersSubframe frame = (StompHeadersSubframe) msg;
             ByteBuf buf = encodeFrame(frame, ctx);
@@ -64,11 +75,13 @@ public class StompSubframeEncoder extends MessageToMessageEncoder<StompSubframe>
     private static ByteBuf encodeFrame(StompHeadersSubframe frame, ChannelHandlerContext ctx) {
         ByteBuf buf = ctx.alloc().buffer();
 
-        buf.writeCharSequence(frame.command().toString(), CharsetUtil.US_ASCII);
+        buf.writeCharSequence(frame.command().toString(), CharsetUtil.UTF_8);
         buf.writeByte(StompConstants.LF);
-        AsciiHeadersEncoder headersEncoder = new AsciiHeadersEncoder(buf, SeparatorType.COLON, NewlineType.LF);
         for (Entry<CharSequence, CharSequence> entry : frame.headers()) {
-            headersEncoder.encode(entry);
+            ByteBufUtil.writeUtf8(buf, entry.getKey());
+            buf.writeByte(StompConstants.COLON);
+            ByteBufUtil.writeUtf8(buf, entry.getValue());
+            buf.writeByte(StompConstants.LF);
         }
         buf.writeByte(StompConstants.LF);
         return buf;

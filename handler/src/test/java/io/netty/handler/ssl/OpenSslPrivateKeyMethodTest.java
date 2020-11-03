@@ -5,7 +5,7 @@
  * 2.0 (the "License"); you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at:
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -65,10 +65,11 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static io.netty.handler.ssl.OpenSslTestUtils.checkShouldUseKeyManagerFactory;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
@@ -88,6 +89,8 @@ public class OpenSslPrivateKeyMethodTest {
 
     @BeforeClass
     public static void init() throws Exception {
+        checkShouldUseKeyManagerFactory();
+
         Assume.assumeTrue(OpenSsl.isBoringSSL());
         // Check if the cipher is supported at all which may not be the case for various JDK versions and OpenSSL API
         // implementations.
@@ -313,11 +316,22 @@ public class OpenSslPrivateKeyMethodTest {
     }
 
     @Test
-    public void testPrivateKeyMethodFails() throws Exception {
+    public void testPrivateKeyMethodFailsBecauseOfException() throws Exception {
+        testPrivateKeyMethodFails(false);
+    }
+
+    @Test
+    public void testPrivateKeyMethodFailsBecauseOfNull() throws Exception {
+        testPrivateKeyMethodFails(true);
+    }
+    private void testPrivateKeyMethodFails(final boolean returnNull) throws Exception {
         final SslContext sslServerContext = buildServerContext(new OpenSslPrivateKeyMethod() {
             @Override
             public byte[] sign(SSLEngine engine, int signatureAlgorithm, byte[] input) throws Exception {
                 assertThread();
+                if (returnNull) {
+                    return null;
+                }
                 throw new SignatureException();
             }
 

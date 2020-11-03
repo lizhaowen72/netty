@@ -5,7 +5,7 @@
  * version 2.0 (the "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at:
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *   https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -24,6 +24,8 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 public class StompSubframeAggregatorTest {
 
@@ -62,6 +64,9 @@ public class StompSubframeAggregatorTest {
         Assert.assertEquals(StompCommand.SEND, frame.command());
         Assert.assertEquals("hello, queue a!!!", frame.content().toString(CharsetUtil.UTF_8));
         frame.release();
+
+        // frames ending with \n also trigger a heartbeat frame after normal frame parsing
+        assertHeartbeatFrame(channel);
 
         Assert.assertNull(channel.readInbound());
     }
@@ -112,6 +117,9 @@ public class StompSubframeAggregatorTest {
         Assert.assertEquals(StompCommand.SEND, frame.command());
         frame.release();
 
+        // frames ending with \n also trigger a heartbeat frame after normal frame parsing
+        assertHeartbeatFrame(channel);
+
         Assert.assertNull(channel.readInbound());
     }
 
@@ -131,9 +139,15 @@ public class StompSubframeAggregatorTest {
         Assert.assertEquals(StompCommand.CONNECTED, frame.command());
         frame.release();
 
+        // frames ending with \n also trigger a heartbeat frame after normal frame parsing
+        assertHeartbeatFrame(channel);
+
         frame = channel.readInbound();
         Assert.assertEquals(StompCommand.SEND, frame.command());
         frame.release();
+
+        // frames ending with \n also trigger a heartbeat frame after normal frame parsing
+        assertHeartbeatFrame(channel);
 
         Assert.assertNull(channel.readInbound());
     }
@@ -141,6 +155,12 @@ public class StompSubframeAggregatorTest {
     @Test(expected = TooLongFrameException.class)
     public void testTooLongFrameException() {
         EmbeddedChannel channel = new EmbeddedChannel(new StompSubframeDecoder(), new StompSubframeAggregator(10));
-        channel.writeInbound(Unpooled.wrappedBuffer(StompTestConstants.SEND_FRAME_1.getBytes()));
+        channel.writeInbound(Unpooled.wrappedBuffer(StompTestConstants.TOO_LONG_FRAME.getBytes()));
+    }
+
+    private static void assertHeartbeatFrame(EmbeddedChannel channel) {
+        StompFrame frame = channel.readInbound();
+        assertEquals(StompCommand.HEARTBEAT, frame.command());
+        frame.release();
     }
 }

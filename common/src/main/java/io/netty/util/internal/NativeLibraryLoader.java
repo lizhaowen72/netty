@@ -5,7 +5,7 @@
  * version 2.0 (the "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at:
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *   https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -137,9 +137,11 @@ public final class NativeLibraryLoader {
             return;
         } catch (Throwable ex) {
             suppressed.add(ex);
-            logger.debug(
-                    "{} cannot be loaded from java.library.path, "
-                    + "now trying export to -Dio.netty.native.workdir: {}", name, WORKDIR, ex);
+            if (logger.isDebugEnabled()) {
+                logger.debug(
+                        "{} cannot be loaded from java.library.path, "
+                                + "now trying export to -Dio.netty.native.workdir: {}", name, WORKDIR, ex);
+            }
         }
 
         String libname = System.mapLibraryName(name);
@@ -178,7 +180,7 @@ public final class NativeLibraryLoader {
 
             int index = libname.lastIndexOf('.');
             String prefix = libname.substring(0, index);
-            String suffix = libname.substring(index, libname.length());
+            String suffix = libname.substring(index);
 
             tmpFile = File.createTempFile(prefix, suffix, WORKDIR);
             in = url.openStream();
@@ -348,12 +350,26 @@ public final class NativeLibraryLoader {
             }
             NativeLibraryUtil.loadLibrary(name, absolute);  // Fallback to local helper class.
             logger.debug("Successfully loaded the library {}", name);
+        } catch (NoSuchMethodError nsme) {
+            if (suppressed != null) {
+                ThrowableUtil.addSuppressed(nsme, suppressed);
+            }
+            rethrowWithMoreDetailsIfPossible(name, nsme);
         } catch (UnsatisfiedLinkError ule) {
             if (suppressed != null) {
                 ThrowableUtil.addSuppressed(ule, suppressed);
             }
             throw ule;
         }
+    }
+
+    @SuppressJava6Requirement(reason = "Guarded by version check")
+    private static void rethrowWithMoreDetailsIfPossible(String name, NoSuchMethodError error) {
+        if (PlatformDependent.javaVersion() >= 7) {
+            throw new LinkageError(
+                    "Possible multiple incompatible native libraries on the classpath for '" + name + "'?", error);
+        }
+        throw error;
     }
 
     private static void loadLibraryByHelper(final Class<?> helper, final String name, final boolean absolute)
@@ -482,6 +498,7 @@ public final class NativeLibraryLoader {
 
     private static final class NoexecVolumeDetector {
 
+        @SuppressJava6Requirement(reason = "Usage guarded by java version check")
         private static boolean canExecuteExecutable(File file) throws IOException {
             if (PlatformDependent.javaVersion() < 7) {
                 // Pre-JDK7, the Java API did not directly support POSIX permissions; instead of implementing a custom

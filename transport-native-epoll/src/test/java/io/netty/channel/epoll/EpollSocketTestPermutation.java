@@ -5,7 +5,7 @@
  * version 2.0 (the "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at:
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *   https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -36,7 +36,6 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.io.IOException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
@@ -143,11 +142,46 @@ class EpollSocketTestPermutation extends SocketTestPermutation {
                 new BootstrapFactory<Bootstrap>() {
                     @Override
                     public Bootstrap newInstance() {
-                        return new Bootstrap().group(EPOLL_WORKER_GROUP).channel(EpollDatagramChannel.class);
+                        return new Bootstrap().group(EPOLL_WORKER_GROUP).channelFactory(new ChannelFactory<Channel>() {
+                            @Override
+                            public Channel newChannel() {
+                                return new EpollDatagramChannel(family);
+                            }
+
+                            @Override
+                            public String toString() {
+                                return InternetProtocolFamily.class.getSimpleName() + ".class";
+                            }
+                        });
                     }
                 }
         );
         return combo(bfs, bfs);
+    }
+
+    List<TestsuitePermutation.BootstrapComboFactory<Bootstrap, Bootstrap>> epollOnlyDatagram(
+            final InternetProtocolFamily family) {
+        return combo(Collections.singletonList(datagramBootstrapFactory(family)),
+                Collections.singletonList(datagramBootstrapFactory(family)));
+    }
+
+    private BootstrapFactory<Bootstrap> datagramBootstrapFactory(final InternetProtocolFamily family) {
+        return new BootstrapFactory<Bootstrap>() {
+            @Override
+            public Bootstrap newInstance() {
+                return new Bootstrap().group(EPOLL_WORKER_GROUP).channelFactory(new ChannelFactory<Channel>() {
+                    @Override
+                    public Channel newChannel() {
+                        return new EpollDatagramChannel(family);
+                    }
+
+                    @Override
+                    public String toString() {
+                        return InternetProtocolFamily.class.getSimpleName() + ".class";
+                    }
+                });
+            }
+        };
     }
 
     public List<TestsuitePermutation.BootstrapComboFactory<ServerBootstrap, Bootstrap>> domainSocket() {
