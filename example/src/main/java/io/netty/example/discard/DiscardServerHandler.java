@@ -15,8 +15,10 @@
  */
 package io.netty.example.discard;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.ReferenceCountUtil;
 
 /**
  * Handles a server-side channel.
@@ -33,5 +35,19 @@ public class DiscardServerHandler extends SimpleChannelInboundHandler<Object> {
         // Close the connection when an exception is raised.
         cause.printStackTrace();
         ctx.close();
+    }
+
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        ByteBuf in = (ByteBuf) msg;
+        try {
+            while (in.isReadable()){// This inefficient loop can actually be simplified to: System.out.println(in.toString(io.netty.util.CharsetUtil.UA_ASCII))
+                System.out.print((char)in.readByte());
+                System.out.flush();
+            }
+        }finally {
+            // 2.Alternatively,you could do in.release() here
+            ReferenceCountUtil.release(msg);
+        }
     }
 }
