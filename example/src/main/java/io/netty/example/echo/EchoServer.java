@@ -55,9 +55,27 @@ public final class EchoServer {
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
+            // Here,we specify to use the NioServerSocketChannel class which is used to instantiate a new Channel to accept incoming connections.
              .channel(NioServerSocketChannel.class)
+            /**
+             * You can also set the parameters which are specified to the Channel implementation. We are writing a TCP/IP server,so we are allowed
+             * to set the socket options such as tcpNoDelay and keepAlive.Please refer to the apidocs of ChannelOption and the specific ChannelConfig
+             * implementations to get an overview about the support ChannelOptions
+              */
              .option(ChannelOption.SO_BACKLOG, 100)
+            /**
+             * Did you notice option() and childOption?option() is for the NioServerSocketChannel that accepts incoming connections.
+             * childOption() is for the Channels accepted by the parent ServerChannel,which is NioServerSocketChannel in this case.
+             */
+             .childOption(ChannelOption.SO_KEEPALIVE,true)
              .handler(new LoggingHandler(LogLevel.INFO))
+            /**
+             * The handler specified here will always be evaluated by a newly accepted Channel.The ChannelInitializer is a special
+             * handler that is purposed to help a user configure a new Channel.It is most likely that you want to configure the ChannelPipeline
+             * of the new Channel by adding some handlers such as DiscardServerHandler to implement your network application.As the application
+             * gets compilcated,it is likely that you will add more handlers to the pipeline and extract this  anonymous class into a top-level
+             * class eventually.
+             */
              .childHandler(new ChannelInitializer<SocketChannel>() {
                  @Override
                  public void initChannel(SocketChannel ch) throws Exception {
@@ -71,6 +89,10 @@ public final class EchoServer {
              });
 
             // Start the server.
+            /**
+             * We are ready to go now.What‘s left is to bind to the port and to start the server.Here,we bind to the port 8080 of all NICs(network
+             * interface cards) in the machine.You can now call the bind() methods as many times as you want(with different bind addresses.)
+             */
             ChannelFuture f = b.bind(PORT).sync();
 
             // Wait until the server socket is closed.

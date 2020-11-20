@@ -33,6 +33,12 @@ import java.util.concurrent.ThreadFactory;
 
 /**
  * {@link MultithreadEventLoopGroup} implementations which is used for NIO {@link Selector} based {@link Channel}s.
+ * NioEventLoopGroup is a multitheraded event loop that handles I/O operation.Netty provides various EventLoopGroup
+ * implementations for different kind of transports.We are implementing a server-side application int this example,
+ * and therfore two NioEventLoopGroup will be used.The first one,often called 'boss',accepts the connection.The second
+ * one，often called ‘worker’，handles the traffic of  accepted connection once the boss accepts the connection and
+ * registers the accepted connection to the worker.How many Threads are used and how they are mapped to the created
+ * Channels depends on the EventLoopGroup implementation and may be even configurable via a constructor
  */
 public class NioEventLoopGroup extends MultithreadEventLoopGroup {
 

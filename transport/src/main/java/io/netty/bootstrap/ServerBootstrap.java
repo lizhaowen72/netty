@@ -40,7 +40,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * {@link Bootstrap} sub-class which allows easy bootstrap of {@link ServerChannel}
- *
+ * ServerBootstrap is a helper class that sets up a server.You can set up the server using a Channel directly.However,
+ * please note that this a tedious process,and you do not need to do that in most cases.
  */
 public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerChannel> {
 
