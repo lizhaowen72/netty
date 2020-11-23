@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 The Netty Project
+ * Copyright 2020 The Netty Project
  *
  * The Netty Project licenses this file to you under the Apache License,
  * version 2.0 (the "License"); you may not use this file except in compliance
@@ -13,26 +13,19 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package io.netty.handler.codec.stomp;
+package io.netty.handler.ssl;
+
+import javax.net.ssl.SSLException;
 
 /**
- * STOMP command
+ * {@link SSLException} which signals that the exception was caused by an {@link javax.net.ssl.SSLEngine} which was
+ * closed already.
  */
-public enum StompCommand {
-    STOMP,
-    CONNECT,
-    CONNECTED,
-    SEND,
-    SUBSCRIBE,
-    UNSUBSCRIBE,
-    ACK,
-    NACK,
-    BEGIN,
-    ABORT,
-    COMMIT,
-    DISCONNECT,
-    MESSAGE,
-    RECEIPT,
-    ERROR,
-    UNKNOWN
+public final class SslClosedEngineException extends SSLException {
+
+    private static final long serialVersionUID = -5204207600474401904L;
+
+    public SslClosedEngineException(String reason) {
+        super(reason);
+    }
 }
